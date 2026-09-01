@@ -94,10 +94,17 @@ User message: "{state['user_text']}"
     raw = raw.replace("```json", "").replace("```", "").strip()
     raw = re.sub(r'\.\w+\(\)', '', raw)
     
+    # Fix missing braces/brackets
     open_braces = raw.count('{') - raw.count('}')
     raw += '}' * max(0, open_braces)
     open_brackets = raw.count('[') - raw.count(']')
     raw += ']' * max(0, open_brackets)
+    
+    # Fix extra closing braces/brackets
+    while raw.count('}') > raw.count('{') and raw.endswith('}'):
+        raw = raw[:-1]
+    while raw.count(']') > raw.count('[') and raw.endswith(']'):
+        raw = raw[:-1]
     
     try:
         result = json.loads(raw)
@@ -109,22 +116,30 @@ User message: "{state['user_text']}"
         
         if tool_names:
             tools = []
-            tool_blocks = re.findall(r'\{[^{}]*"name"\s*:\s*"(\w+)"[^{}]*\}', raw)
+            seen = set()
+            # Find full tool blocks
+            tool_blocks = re.findall(r'\{[^{}]*"name"\s*:\s*"\w+"[^{}]*\}', raw)
             
             for block in tool_blocks:
-                name_match = re.search(r'"name"\s*:\s*"(\w+)"', block) if isinstance(block, str) else None
-                tool_name = name_match.group(1) if name_match else block
+                name_match = re.search(r'"name"\s*:\s*"(\w+)"', block)
+                if not name_match:
+                    continue
+                tool_name = name_match.group(1)
+                if tool_name in seen:
+                    continue
+                seen.add(tool_name)
                 
                 args = {}
-                args_section = re.findall(r'"(\w+)"\s*:\s*"([^"]*)"', block if isinstance(block, str) else "")
-                for key, val in args_section:
+                args_pairs = re.findall(r'"(\w+)"\s*:\s*"([^"]*)"', block)
+                for key, val in args_pairs:
                     if key not in ["name", "intent"]:
                         args[key] = val
                 
                 tools.append({"name": tool_name, "args": args})
             
+            # If no blocks parsed, use unique names
             if not tools:
-                for tn in tool_names:
+                for tn in dict.fromkeys(tool_names):
                     tools.append({"name": tn, "args": {}})
             
             intent = "tool"

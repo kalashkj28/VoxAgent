@@ -40,31 +40,29 @@ async def get_weather(city: str) -> dict:
     except Exception as e:
         return {"error": f"Weather fetch failed: {str(e)}"}
 
+# Pre-initialize DDGS client (reuse connection, skip session creation)
+from ddgs import DDGS
+_ddgs_client = DDGS()
+
 async def search_web(query: str) -> dict:
-    """Web search using duckduckgo-search."""
+    """Optimized web search using DuckDuckGo."""
     try:
-        from ddgs import DDGS
-        
         def _search():
-            results = DDGS().text(query, max_results=3)
-            return results
+            global _ddgs_client
+            try:
+                return _ddgs_client.text(query, max_results=1, region="in-en")
+            except Exception:
+                # Recreate client if stale
+                _ddgs_client = DDGS()
+                return _ddgs_client.text(query, max_results=1, region="in-en")
         
-        results = await asyncio.wait_for(asyncio.to_thread(_search), timeout=20.0)
+        results = await asyncio.to_thread(_search)
         
         if not results:
             return {"query": query, "result": "No results found.", "source": "DuckDuckGo"}
         
-        summary = ""
-        for i, r in enumerate(results, 1):
-            summary += f"{i}. {r.get('title', '')}: {r.get('body', '')}\n"
-        
-        return {
-            "query": query,
-            "result": summary[:800],
-            "source": "DuckDuckGo"
-        }
-    except asyncio.TimeoutError:
-        return {"error": f"Search timed out after 20 seconds for: {query}"}
+        r = results[0]
+        return {"query": query, "result": f"{r.get('title','')}: {r.get('body','')}"[:800], "source": "DuckDuckGo"}
     except Exception as e:
         return {"error": f"Search failed: {str(e)}"}
 
