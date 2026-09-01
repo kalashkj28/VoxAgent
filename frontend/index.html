@@ -4,534 +4,531 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VoxAgent - Voice AI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', sans-serif; background: #0f0f1a; color: #eee; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-        .container { width: 500px; background: #1a1a2e; border-radius: 20px; padding: 32px; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
-        h1 { text-align: center; font-size: 28px; margin-bottom: 4px; }
-        .subtitle { text-align: center; color: #888; margin-bottom: 24px; font-size: 14px; }
-        .status { text-align: center; padding: 8px; border-radius: 8px; margin-bottom: 16px; font-size: 13px; }
-        .status.connected { background: #0a3d2a; color: #4ade80; }
-        .status.disconnected { background: #3d0a0a; color: #f87171; }
-        .status.recording { background: #3d2a0a; color: #fbbf24; }
-        #chat-box { height: 320px; overflow-y: auto; border: 1px solid #2a2a4a; border-radius: 12px; padding: 14px; margin-bottom: 16px; background: #0a0a18; }
-        .message { margin-bottom: 12px; padding: 10px 14px; border-radius: 12px; max-width: 85%; font-size: 14px; line-height: 1.5; }
-        .message.user { background: #1e40af; margin-left: auto; text-align: right; border-bottom-right-radius: 4px; }
-        .message.bot { background: #1f2937; border-bottom-left-radius: 4px; }
-        .message.system { background: transparent; color: #666; text-align: center; font-size: 12px; max-width: 100%; }
-        .typing-indicator { display: flex; align-items: center; gap: 4px; padding: 12px 18px; background: #1f2937; border-radius: 12px; border-bottom-left-radius: 4px; width: fit-content; margin-bottom: 12px; }
-        .typing-indicator span { width: 8px; height: 8px; border-radius: 50%; background: #666; animation: bounce 1.4s infinite; }
+        
+        body { 
+            font-family: 'Inter', 'Segoe UI', sans-serif; 
+            background: #f0f2f5;
+            color: #1a1a2e; 
+            height: 100vh; overflow: hidden;
+        }
+
+        /* Animated background */
+        .bg-glow {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none;
+            background: 
+                radial-gradient(ellipse 500px 500px at 15% 20%, rgba(59,130,246,0.08) 0%, transparent 70%),
+                radial-gradient(ellipse 400px 400px at 85% 75%, rgba(139,92,246,0.07) 0%, transparent 70%),
+                radial-gradient(ellipse 300px 300px at 50% 50%, rgba(236,72,153,0.04) 0%, transparent 70%);
+        }
+        .bg-dots {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none;
+            background-image: radial-gradient(circle, #d1d5db 0.8px, transparent 0.8px);
+            background-size: 28px 28px;
+            opacity: 0.3;
+        }
+        .bg-orb {
+            position: fixed; border-radius: 50%; z-index: 0; pointer-events: none;
+            filter: blur(60px); opacity: 0.5;
+            animation: float 20s ease-in-out infinite;
+        }
+        .bg-orb.orb1 { width: 300px; height: 300px; top: -50px; left: -50px; background: rgba(59,130,246,0.12); animation-duration: 18s; }
+        .bg-orb.orb2 { width: 250px; height: 250px; bottom: -30px; right: -30px; background: rgba(139,92,246,0.1); animation-duration: 22s; animation-delay: -5s; }
+        .bg-orb.orb3 { width: 200px; height: 200px; top: 40%; left: 60%; background: rgba(236,72,153,0.06); animation-duration: 25s; animation-delay: -10s; }
+        @keyframes float { 
+            0%, 100% { transform: translate(0, 0) scale(1); } 
+            25% { transform: translate(30px, -20px) scale(1.05); } 
+            50% { transform: translate(-20px, 30px) scale(0.95); } 
+            75% { transform: translate(20px, 20px) scale(1.02); } 
+        }
+
+        .app { 
+            position: relative; z-index: 1;
+            display: flex; flex-direction: column; 
+            height: 100vh; max-width: 1200px; 
+            margin: 0 auto; padding: 20px 24px;
+        }
+
+        /* Header */
+        .header { 
+            display: flex; align-items: center; justify-content: space-between; 
+            padding: 16px 0; margin-bottom: 16px;
+            border-bottom: 1px solid rgba(0,0,0,0.06);
+        }
+        .header-left { display: flex; align-items: center; gap: 12px; }
+        .header-left h1 { 
+            font-size: 22px; font-weight: 700; 
+            background: linear-gradient(135deg, #2563eb, #7c3aed);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .header-left span { color: #9ca3af; font-size: 11px; font-weight: 500; letter-spacing: 2px; text-transform: uppercase; }
+        .header-right { display: flex; align-items: center; gap: 8px; }
+        #status { 
+            padding: 6px 14px; border-radius: 20px; font-size: 11px; font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .status.connected { background: #dcfce7; color: #16a34a; border: 1px solid #bbf7d0; }
+        .status.disconnected { background: #fee2e2; color: #dc2626; border: 1px solid #fecaca; }
+        .status.recording { background: #fef3c7; color: #d97706; border: 1px solid #fde68a; }
+        .github-link { color: #9ca3af; text-decoration: none; font-size: 12px; transition: color 0.2s; }
+        .github-link:hover { color: #6b7280; }
+
+        /* Main Layout */
+        .main { display: grid; grid-template-columns: 1fr 320px; gap: 16px; flex: 1; min-height: 0; overflow: hidden; }
+
+        /* Chat Panel */
+        .chat-panel { 
+            display: flex; flex-direction: column; 
+            background: rgba(255,255,255,0.55); 
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.6); 
+            border-radius: 20px; overflow: hidden;
+            min-height: 0;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.7);
+        }
+        #chat-box { 
+            flex: 1; overflow-y: auto; padding: 16px; 
+            scroll-behavior: smooth; min-height: 0;
+        }
+        #chat-box::-webkit-scrollbar { width: 4px; }
+        #chat-box::-webkit-scrollbar-track { background: transparent; }
+        #chat-box::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+
+        .message { 
+            margin-bottom: 10px; padding: 10px 14px; 
+            border-radius: 14px; max-width: 75%; 
+            font-size: 13px; line-height: 1.6;
+            animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+        .message.user { 
+            background: linear-gradient(135deg, #2563eb, #3b82f6); color: white;
+            margin-left: auto; text-align: right; border-bottom-right-radius: 4px;
+            box-shadow: 0 2px 8px rgba(37,99,235,0.2);
+        }
+        .message.bot { 
+            background: rgba(255,255,255,0.65); border-bottom-left-radius: 4px;
+            border: 1px solid rgba(255,255,255,0.5); color: #374151;
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.5);
+        }
+        .message.system { background: transparent; color: #9ca3af; text-align: center; font-size: 11px; max-width: 100%; }
+
+        .typing-indicator { 
+            display: flex; align-items: center; gap: 5px; 
+            padding: 14px 20px; 
+            background: rgba(255,255,255,0.65); 
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            border-radius: 14px; border-bottom-left-radius: 4px; 
+            width: fit-content; margin-bottom: 10px; 
+            border: 1px solid rgba(255,255,255,0.5);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+        .typing-indicator span { width: 7px; height: 7px; border-radius: 50%; background: #9ca3af; animation: bounce 1.4s infinite; }
         .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
         .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
-        @keyframes bounce { 0%, 60%, 100% { transform: translateY(0); opacity: 0.4; } 30% { transform: translateY(-8px); opacity: 1; } }
-        .controls { display: flex; gap: 10px; align-items: center; justify-content: center; margin-bottom: 16px; }
-        #mic-btn { width: 70px; height: 70px; border-radius: 50%; border: 3px solid #3b82f6; background: transparent; color: white; font-size: 28px; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; }
-        #mic-btn:hover { background: #1e3a5f; }
-        #mic-btn.recording { border-color: #ef4444; background: #450a0a; animation: pulse 1.5s infinite; }
-        @keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.4); } 50% { box-shadow: 0 0 0 15px rgba(239,68,68,0); } }
-        .input-area { display: flex; gap: 8px; margin-bottom: 16px; }
-        #text-input { flex: 1; padding: 12px; border-radius: 10px; border: 1px solid #2a2a4a; background: #0a0a18; color: #eee; font-size: 14px; outline: none; }
-        #text-input:focus { border-color: #3b82f6; }
-        #send-btn { padding: 12px 18px; border-radius: 10px; border: none; background: #3b82f6; color: white; cursor: pointer; font-size: 14px; font-weight: 600; }
-        #send-btn:hover { background: #2563eb; }
-        .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; text-align: center; }
-        .metric { background: #0a0a18; border-radius: 8px; padding: 10px 6px; border: 1px solid #1a1a3a; }
-        .metric-label { font-size: 10px; color: #666; text-transform: uppercase; }
-        .metric-value { font-size: 18px; font-weight: bold; color: #4ade80; margin-top: 4px; }
+        @keyframes bounce { 0%, 60%, 100% { transform: translateY(0); opacity: 0.4; } 30% { transform: translateY(-6px); opacity: 1; } }
+
+        /* Chat Input Bar */
+        .chat-input-bar { 
+            display: flex; align-items: center; gap: 8px; 
+            padding: 12px 14px; border-top: 1px solid rgba(255,255,255,0.4);
+            background: rgba(255,255,255,0.4);
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+        }
+        #text-input { 
+            flex: 1; padding: 10px 14px; border-radius: 10px; 
+            border: 1px solid rgba(0,0,0,0.08); 
+            background: rgba(255,255,255,0.6); color: #1a1a2e; 
+            font-size: 13px; outline: none; font-family: inherit;
+            transition: all 0.3s;
+        }
+        #text-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+        #text-input::placeholder { color: #9ca3af; }
+        #send-btn { 
+            padding: 10px 18px; border-radius: 10px; border: none; 
+            background: linear-gradient(135deg, #2563eb, #6366f1); 
+            color: white; cursor: pointer; font-size: 13px; font-weight: 600; font-family: inherit;
+            transition: all 0.2s;
+        }
+        #send-btn:hover { opacity: 0.9; box-shadow: 0 2px 8px rgba(37,99,235,0.3); }
+
+        /* Right Sidebar */
+        .sidebar { display: flex; flex-direction: column; gap: 14px; overflow-y: auto; }
+        .sidebar::-webkit-scrollbar { display: none; }
+
+        .panel { 
+            background: rgba(255,255,255,0.5); 
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.6); 
+            border-radius: 20px; padding: 18px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.7);
+        }
+        .panel-title { font-size: 11px; color: #6b7280; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600; margin-bottom: 14px; }
+
+        /* Mic Controls */
+        .mic-area { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+        #mic-btn { 
+            width: 72px; height: 72px; border-radius: 50%; 
+            border: 2px solid rgba(59,130,246,0.5); 
+            background: rgba(255,255,255,0.5); 
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            color: #3b82f6; font-size: 28px; cursor: pointer; 
+            transition: all 0.3s; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 16px rgba(59,130,246,0.1), inset 0 1px 0 rgba(255,255,255,0.5);
+        }
+        #mic-btn:hover { background: rgba(59,130,246,0.1); box-shadow: 0 4px 24px rgba(59,130,246,0.2); }
+        #mic-btn.recording { border-color: #ef4444; background: rgba(239,68,68,0.06); animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.2); } 50% { box-shadow: 0 0 0 14px rgba(239,68,68,0); } }
+
+        .toggles { display: flex; gap: 8px; }
+        .toggle-btn { 
+            padding: 7px 14px; border-radius: 20px; 
+            border: 1.5px solid rgba(0,0,0,0.08); 
+            background: rgba(255,255,255,0.4);
+            backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+            color: #6b7280; cursor: pointer; font-size: 11px; 
+            font-weight: 600; transition: all 0.3s; white-space: nowrap; font-family: inherit;
+        }
+        .toggle-btn.active { border-color: #16a34a; color: #16a34a; background: rgba(22,163,106,0.08); }
+
+        /* Metrics */
+        .metrics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .metric { 
+            background: rgba(255,255,255,0.4); border-radius: 12px; 
+            backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+            padding: 10px; text-align: center;
+            border: 1px solid rgba(255,255,255,0.5);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.4);
+        }
+        .metric-label { font-size: 9px; color: #9ca3af; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+        .metric-value { font-size: 18px; font-weight: 700; color: #16a34a; margin-top: 2px; }
+
+        /* Knowledge Base */
+        .kb-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+        .kb-status { font-size: 11px; color: #9ca3af; }
+        .upload-btn { 
+            width: 100%; padding: 10px; border-radius: 10px; 
+            border: 1.5px dashed #93c5fd; background: transparent; 
+            color: #2563eb; cursor: pointer; font-size: 12px; font-family: inherit;
+            transition: all 0.3s; font-weight: 500;
+        }
+        .upload-btn:hover { border-color: #3b82f6; background: rgba(59,130,246,0.04); }
+        .progress-wrap { display: none; margin-top: 8px; }
+        .progress-bar-bg { background: #e5e7eb; border-radius: 6px; overflow: hidden; height: 4px; }
+        .progress-bar { height: 100%; background: linear-gradient(90deg, #3b82f6, #8b5cf6); border-radius: 6px; width: 0%; transition: width 0.3s; }
+        .progress-text { font-size: 10px; color: #6b7280; margin-top: 4px; text-align: center; }
+        .kb-file { display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; margin-top: 4px; background: #f3f4f6; border-radius: 8px; font-size: 11px; }
+        .kb-file-name { color: #4b5563; }
+        .kb-file-delete { background: transparent; border: none; color: #ef4444; cursor: pointer; font-size: 11px; opacity: 0.6; }
+        .kb-file-delete:hover { opacity: 1; }
+
+        /* Mobile */
+        @media (max-width: 768px) {
+            .app { padding: 12px; }
+            .main { grid-template-columns: 1fr; }
+            .header { flex-direction: column; gap: 8px; text-align: center; }
+            .header-right { justify-content: center; }
+            .chat-panel { min-height: 50vh; }
+            .sidebar { flex-direction: row; flex-wrap: wrap; }
+            .sidebar .panel { flex: 1; min-width: calc(50% - 7px); }
+            .sidebar .panel:first-child { min-width: 100%; }
+            #mic-btn { width: 60px; height: 60px; font-size: 24px; }
+        }
+
+        @media (max-width: 480px) {
+            .sidebar { flex-direction: column; }
+            .sidebar .panel { min-width: 100%; }
+            .metrics-grid { grid-template-columns: repeat(4, 1fr); }
+            .metric { padding: 8px 4px; }
+            .metric-value { font-size: 14px; }
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🎙️ VoxAgent</h1>
-        <p class="subtitle">Real-time Voice AI Agent</p>
-        
-        <div id="status" class="status disconnected">🔴 Disconnected</div>
-        
-        <div id="chat-box">
-            <div class="message system">🎤 Mic button click to start</div>
-        </div>
-
-        <div class="controls">
-            <button id="mic-btn" onclick="toggleRecording()">🎤</button>
-            <button id="auto-btn" onclick="toggleAutoMode()" style="padding: 10px 16px; border-radius: 20px; border: 2px solid #666; background: transparent; color: #888; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.3s;">🔁 Auto: OFF</button>
-            <button id="tts-btn" onclick="toggleTTS()" style="padding: 10px 16px; border-radius: 20px; border: 2px solid #4ade80; background: rgba(74,222,128,0.1); color: #4ade80; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.3s;">🔊 Voice: ON</button>
-        </div>
-
-        <div class="input-area">
-            <input type="text" id="text-input" placeholder="Or type here..." />
-            <button id="send-btn" onclick="sendText()">Send</button>
-        </div>
-
-        <div class="metrics">
-            <div class="metric"><div class="metric-label">STT</div><div class="metric-value" id="stt-ms">-</div></div>
-            <div class="metric"><div class="metric-label">LLM</div><div class="metric-value" id="llm-ms">-</div></div>
-            <div class="metric"><div class="metric-label">TTS</div><div class="metric-value" id="tts-ms">-</div></div>
-            <div class="metric"><div class="metric-label">Total</div><div class="metric-value" id="total-ms">-</div></div>
-        </div>
-
-        <div style="margin-top: 16px; padding: 14px; border: 1px solid #2a2a4a; border-radius: 12px; background: #0a0a18;">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
-                <span style="font-size: 13px; font-weight: 600; color: #888;">📚 Knowledge Base</span>
-                <span id="kb-status" style="font-size: 11px; color: #666;">No documents</span>
+    <div class="bg-glow"></div>
+    <div class="bg-dots"></div>
+    <div class="bg-orb orb1"></div>
+    <div class="bg-orb orb2"></div>
+    <div class="bg-orb orb3"></div>
+    <div class="app">
+        <div class="header">
+            <div class="header-left">
+                <h1>🎙️ VoxAgent</h1>
+                <span>Voice AI Agent</span>
             </div>
-            <div style="display: flex; gap: 8px;">
-                <input type="file" id="pdf-input" accept=".pdf" style="display: none;" onchange="uploadPDF()" />
-                <button id="upload-btn" onclick="document.getElementById('pdf-input').click()" style="flex: 1; padding: 10px; border-radius: 10px; border: 1px dashed #3b82f6; background: transparent; color: #3b82f6; cursor: pointer; font-size: 12px; transition: all 0.3s;">📄 Upload PDF</button>
+            <div class="header-right">
+                <div id="status" class="status disconnected">🔴 Connecting...</div>
             </div>
-            
-            <div id="kb-progress" style="display: none; margin-top: 8px;">
-                <div style="background: #1a1a3a; border-radius: 6px; overflow: hidden; height: 6px;">
-                    <div id="kb-progress-bar" style="height: 100%; background: linear-gradient(90deg, #3b82f6, #8b5cf6); border-radius: 6px; width: 0%; transition: width 0.3s ease;"></div>
+        </div>
+
+        <div class="main">
+            <!-- Left: Chat -->
+            <div class="chat-panel">
+                <div id="chat-box">
+                    <div class="message system">🎤 Click mic to start talking</div>
                 </div>
-                <div id="kb-progress-text" style="font-size: 11px; color: #888; margin-top: 4px; text-align: center;">Uploading...</div>
+                <div class="chat-input-bar">
+                    <input type="text" id="text-input" placeholder="Type a message..." />
+                    <button id="send-btn" onclick="sendText()">Send</button>
+                </div>
             </div>
-            <div id="kb-files" style="margin-top: 8px;"></div>
+
+            <!-- Right: Sidebar -->
+            <div class="sidebar">
+                <!-- Mic Controls -->
+                <div class="panel">
+                    <div class="panel-title">Controls</div>
+                    <div class="mic-area">
+                        <button id="mic-btn" onclick="toggleRecording()">🎤</button>
+                        <span style="font-size:10px; color:#9ca3af; margin-top:-6px;">Click to record, click again to stop</span>
+                        <div class="toggles">
+                            <button id="auto-btn" class="toggle-btn" onclick="toggleAutoMode()">🔁 Auto</button>
+                            <button id="tts-btn" class="toggle-btn active" onclick="toggleTTS()">🔊 Voice</button>
+                        </div>
+                        <div style="display:flex; gap:16px; font-size:9px; color:#9ca3af; text-align:center;">
+                            <span>Hands-free<br>conversation</span>
+                            <span>Toggle voice<br>response</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Metrics -->
+                <div class="panel">
+                    <div class="panel-title">Latency</div>
+                    <div class="metrics-grid">
+                        <div class="metric"><div class="metric-label">STT</div><div class="metric-value" id="stt-ms">—</div></div>
+                        <div class="metric"><div class="metric-label">LLM</div><div class="metric-value" id="llm-ms">—</div></div>
+                        <div class="metric"><div class="metric-label">TTS</div><div class="metric-value" id="tts-ms">—</div></div>
+                        <div class="metric"><div class="metric-label">Total</div><div class="metric-value" id="total-ms">—</div></div>
+                    </div>
+                </div>
+
+                <!-- Knowledge Base -->
+                <div class="panel">
+                    <div class="kb-header">
+                        <div class="panel-title" style="margin-bottom:0">Knowledge Base</div>
+                        <span id="kb-status" class="kb-status">No documents</span>
+                    </div>
+                    <input type="file" id="pdf-input" accept=".pdf" style="display:none;" onchange="uploadPDF()" />
+                    <button id="upload-btn" class="upload-btn" onclick="document.getElementById('pdf-input').click()">📄 Upload PDF</button>
+                    <div id="kb-progress" class="progress-wrap">
+                        <div class="progress-bar-bg"><div id="kb-progress-bar" class="progress-bar"></div></div>
+                        <div id="kb-progress-text" class="progress-text">Uploading...</div>
+                    </div>
+                    <div id="kb-files"></div>
+                </div>
+
+                <!-- Watermark -->
+                <div style="text-align:center; padding: 8px 0; font-size:10px; color:#9ca3af;">
+                    Built by <span style="font-weight:600; color:#6b7280;">Kalash Jain</span>
+                    <div style="display:flex; justify-content:center; gap:12px; margin-top:4px;">
+                        <a href="https://www.linkedin.com/in/kalashjain28" target="_blank" style="color:#9ca3af; text-decoration:none; font-size:10px;" onmouseover="this.style.color='#2563eb'" onmouseout="this.style.color='#9ca3af'">LinkedIn</a>
+                        <a href="https://github.com/kalashkj28" target="_blank" style="color:#9ca3af; text-decoration:none; font-size:10px;" onmouseover="this.style.color='#2563eb'" onmouseout="this.style.color='#9ca3af'">GitHub</a>
+                        <a href="https://kalashkj28.github.io/" target="_blank" style="color:#9ca3af; text-decoration:none; font-size:10px;" onmouseover="this.style.color='#2563eb'" onmouseout="this.style.color='#9ca3af'">Portfolio</a>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
     let ttsEnabled = true;
-
     function toggleTTS() {
         ttsEnabled = !ttsEnabled;
         const btn = document.getElementById("tts-btn");
-        if (ttsEnabled) {
-            btn.textContent = "🔊 Voice: ON";
-            btn.style.borderColor = "#4ade80";
-            btn.style.color = "#4ade80";
-            btn.style.background = "rgba(74,222,128,0.1)";
-        } else {
-            btn.textContent = "🔇 Voice: OFF";
-            btn.style.borderColor = "#666";
-            btn.style.color = "#888";
-            btn.style.background = "transparent";
-        }
-        
-        // Tell server to skip TTS
-        if (voiceWs && voiceWs.readyState === WebSocket.OPEN) {
-            voiceWs.send(ttsEnabled ? "tts_on" : "tts_off");
-        }
-        if (chatWs && chatWs.readyState === WebSocket.OPEN) {
-            chatWs.send(ttsEnabled ? "tts_on" : "tts_off");
-        }
+        btn.textContent = ttsEnabled ? "🔊 Voice" : "🔇 Muted";
+        ttsEnabled ? btn.classList.add("active") : btn.classList.remove("active");
+        if (voiceWs && voiceWs.readyState === WebSocket.OPEN) voiceWs.send(ttsEnabled ? "tts_on" : "tts_off");
+        if (chatWs && chatWs.readyState === WebSocket.OPEN) chatWs.send(ttsEnabled ? "tts_on" : "tts_off");
         addMessage(`${ttsEnabled ? "🔊" : "🔇"} Voice ${ttsEnabled ? "ON" : "OFF"}`, "system");
     }
 
     const voiceWs = new WebSocket("ws://localhost:8000/ws/voice");
     const chatWs = new WebSocket("ws://localhost:8000/ws/chat");
-    
     const statusDiv = document.getElementById("status");
     const chatBox = document.getElementById("chat-box");
 
-    voiceWs.onopen = () => {
-        statusDiv.textContent = "🟢 Connected — Ready to talk!";
-        statusDiv.className = "status connected";
-    };
+    voiceWs.onopen = () => { statusDiv.textContent = "🟢 Connected"; statusDiv.className = "status connected"; };
+    voiceWs.onclose = () => { statusDiv.textContent = "🔴 Disconnected"; statusDiv.className = "status disconnected"; };
 
     voiceWs.onmessage = (event) => {
-        if (event.data instanceof Blob) {
-            playAudio(event.data);
-            return;
-        }
-        
+        if (event.data instanceof Blob) { playAudio(event.data); return; }
         const data = JSON.parse(event.data);
-        
-        if (data.type === "transcript") {
-            addMessage(`🎤 ${data.text}`, "user");
-            showTyping();
-        }
-        else if (data.type === "response") {
-            removeTyping();
-            addMessageStreaming(data.text, "bot");
-        }
-        else if (data.type === "metrics") {
-            document.getElementById("stt-ms").textContent = data.stt_ms + "ms";
-            document.getElementById("llm-ms").textContent = data.llm_ms + "ms";
-            document.getElementById("tts-ms").textContent = data.tts_ms + "ms";
-            document.getElementById("total-ms").textContent = data.total_ms + "ms";
-        }
-        else if (data.type === "error") {
-            addMessage(`⚠️ ${data.message}`, "system");
-        }
-        else if (data.type === "no_wake_word") {
-            if (autoMode) {
-                setTimeout(() => { if (autoMode) startRecording(); }, 100);
-            }
-        }
-    };
-
-    voiceWs.onclose = () => {
-        statusDiv.textContent = "🔴 Disconnected";
-        statusDiv.className = "status disconnected";
+        if (data.type === "transcript") { addMessage(`🎤 ${data.text}`, "user"); showTyping(); }
+        else if (data.type === "response") { removeTyping(); addMessageStreaming(data.text, "bot"); }
+        else if (data.type === "metrics") { updateMetrics(data); }
+        else if (data.type === "error") { addMessage(`⚠️ ${data.message}`, "system"); }
+        else if (data.type === "no_wake_word") { if (autoMode) setTimeout(() => { if (autoMode) startRecording(); }, 100); }
     };
 
     chatWs.onmessage = (event) => {
-        if (event.data instanceof Blob) {
-            playAudio(event.data);
-            return;
-        }
-        
+        if (event.data instanceof Blob) { playAudio(event.data); return; }
         const data = JSON.parse(event.data);
-        if (data.type === "response") {
-            removeTyping();
-            addMessageStreaming(data.text, "bot");
-        } else if (data.type === "metrics") {
-            document.getElementById("stt-ms").textContent = data.stt_ms + "ms";
-            document.getElementById("llm-ms").textContent = data.llm_ms + "ms";
-            document.getElementById("tts-ms").textContent = data.tts_ms + "ms";
-            document.getElementById("total-ms").textContent = data.total_ms + "ms";
-        } else if (data.type === "error") {
-            addMessage(`⚠️ ${data.message}`, "system");
-        }
+        if (data.type === "response") { removeTyping(); addMessageStreaming(data.text, "bot"); }
+        else if (data.type === "metrics") { updateMetrics(data); }
+        else if (data.type === "error") { addMessage(`⚠️ ${data.message}`, "system"); }
     };
+    chatWs.onerror = (e) => console.error("Chat WS error:", e);
 
-    chatWs.onerror = (error) => {
-        console.error("Chat WebSocket error:", error);
-    };
+    function updateMetrics(data) {
+        document.getElementById("stt-ms").textContent = data.stt_ms + "ms";
+        document.getElementById("llm-ms").textContent = data.llm_ms + "ms";
+        document.getElementById("tts-ms").textContent = data.tts_ms + "ms";
+        document.getElementById("total-ms").textContent = data.total_ms + "ms";
+    }
 
-    let mediaRecorder = null;
-    let audioChunks = [];
-    let isRecording = false;
-    let currentAudio = null;
-    let autoMode = false;
-    let silenceTimer = null;
-    let audioContext = null;
-    let analyser = null;
-    let micStream = null;
+    let mediaRecorder = null, audioChunks = [], isRecording = false, currentAudio = null;
+    let autoMode = false, silenceTimer = null, audioContext = null, analyser = null, micStream = null;
 
     function toggleAutoMode() {
         autoMode = !autoMode;
         const btn = document.getElementById("auto-btn");
-        if (autoMode) {
-            btn.textContent = "🔁 Auto: ON";
-            btn.style.borderColor = "#4ade80";
-            btn.style.color = "#4ade80";
-            btn.style.background = "#0a3d2a";
-            addMessage('🔁 Auto mode ON', "system");
-            if (voiceWs.readyState === WebSocket.OPEN) {
-                voiceWs.send(JSON.stringify({ type: "auto_on" }));
-            }
-            startRecording();
-        } else {
-            btn.textContent = "🔁 Auto: OFF";
-            btn.style.borderColor = "#666";
-            btn.style.color = "#888";
-            btn.style.background = "transparent";
-            addMessage("🔁 Auto mode OFF", "system");
-            if (voiceWs.readyState === WebSocket.OPEN) {
-                voiceWs.send(JSON.stringify({ type: "auto_off" }));
-            }
-            if (isRecording) stopRecording();
-        }
+        btn.textContent = "🔁 Auto";
+        autoMode ? btn.classList.add("active") : btn.classList.remove("active");
+        addMessage(`🔁 Auto mode ${autoMode ? "ON" : "OFF"}`, "system");
+        if (voiceWs.readyState === WebSocket.OPEN) voiceWs.send(JSON.stringify({ type: autoMode ? "auto_on" : "auto_off" }));
+        if (autoMode) startRecording(); else if (isRecording) stopRecording();
     }
 
     function interruptCurrentResponse() {
         try {
-            if (currentAudio) {
-                currentAudio.pause();
-                currentAudio.currentTime = 0;
-                currentAudio = null;
-            }
-            if (voiceWs && voiceWs.readyState === WebSocket.OPEN) {
-                voiceWs.send(JSON.stringify({ type: "cancel" }));
-            }
+            if (currentAudio) { currentAudio.pause(); currentAudio.currentTime = 0; currentAudio = null; }
+            if (voiceWs && voiceWs.readyState === WebSocket.OPEN) voiceWs.send(JSON.stringify({ type: "cancel" }));
         } catch (err) {}
     }
 
-    async function toggleRecording() {
-        if (isRecording) {
-            stopRecording();
-        } else {
-            await startRecording();
-        }
-    }
+    async function toggleRecording() { isRecording ? stopRecording() : await startRecording(); }
 
     async function startRecording() {
         try {
             interruptCurrentResponse();
-            
-            const stream = await navigator.mediaDevices.getUserMedia({ 
-                audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
-            });
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
             micStream = stream;
-            
             mediaRecorder = new MediaRecorder(stream, { audioBitsPerSecond: 128000 });
             audioChunks = [];
-            
-            mediaRecorder.ondataavailable = (event) => audioChunks.push(event.data);
-            
+            mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
             mediaRecorder.onstop = async () => {
                 const audioBlob = new Blob(audioChunks, { type: "audio/wav" });
-                
-                if (audioBlob.size > 1000) {
-                    addMessage("🔄 Processing...", "system");
-                    voiceWs.send(await audioBlob.arrayBuffer());
-                } else if (autoMode) {
-                    setTimeout(() => { if (autoMode) startRecording(); }, 500);
-                }
-                
-                if (!autoMode) {
-                    stream.getTracks().forEach(track => track.stop());
-                }
+                if (audioBlob.size > 1000) { addMessage("🔄 Processing...", "system"); voiceWs.send(await audioBlob.arrayBuffer()); }
+                else if (autoMode) { setTimeout(() => { if (autoMode) startRecording(); }, 500); }
+                if (!autoMode) stream.getTracks().forEach(t => t.stop());
             };
-            
             mediaRecorder.start();
             isRecording = true;
-            
             document.getElementById("mic-btn").classList.add("recording");
             document.getElementById("mic-btn").textContent = "⬜";
-            statusDiv.textContent = autoMode ? "🟢 Auto Mode Active" : "🔴 Recording... Click to stop";
+            statusDiv.textContent = autoMode ? "🟢 Auto Mode" : "🔴 Recording...";
             statusDiv.className = "status recording";
-            
             startSilenceDetection(stream);
-            
-        } catch (err) {
-            addMessage("❌ Mic access denied!", "system");
-        }
+        } catch (err) { addMessage("❌ Mic access denied!", "system"); }
     }
 
     function stopRecording() {
-        if (silenceTimer) {
-            clearTimeout(silenceTimer);
-            silenceTimer = null;
-        }
-        
+        if (silenceTimer) { clearTimeout(silenceTimer); silenceTimer = null; }
         if (mediaRecorder && mediaRecorder.state !== "inactive") {
-            mediaRecorder.stop();
-            isRecording = false;
-            
+            mediaRecorder.stop(); isRecording = false;
             document.getElementById("mic-btn").classList.remove("recording");
             document.getElementById("mic-btn").textContent = "🎤";
-            statusDiv.textContent = "🟢 Connected — Ready to talk!";
-            statusDiv.className = "status connected";
+            statusDiv.textContent = "🟢 Connected"; statusDiv.className = "status connected";
         }
-        
-        if (!autoMode && micStream) {
-            micStream.getTracks().forEach(track => track.stop());
-            micStream = null;
-        }
+        if (!autoMode && micStream) { micStream.getTracks().forEach(t => t.stop()); micStream = null; }
     }
 
     function startSilenceDetection(stream) {
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
         const source = audioContext.createMediaStreamSource(stream);
-        analyser = audioContext.createAnalyser();
-        analyser.fftSize = 512;
+        analyser = audioContext.createAnalyser(); analyser.fftSize = 512;
         source.connect(analyser);
-        
         const dataArray = new Uint8Array(analyser.frequencyBinCount);
         let silentSince = null;
-        const SILENCE_THRESHOLD = 15;
-        const SILENCE_DURATION = 2500;
-        
         function checkSilence() {
             if (!isRecording) return;
-            
             analyser.getByteFrequencyData(dataArray);
-            const avgLevel = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
-            
-            if (avgLevel < SILENCE_THRESHOLD) {
-                if (!silentSince) silentSince = Date.now();
-                if (Date.now() - silentSince > SILENCE_DURATION) {
-                    stopRecording();
-                    return;
-                }
-            } else {
-                silentSince = null;
-            }
-            
+            const avg = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
+            if (avg < 15) { if (!silentSince) silentSince = Date.now(); if (Date.now() - silentSince > 2500) { stopRecording(); return; } }
+            else { silentSince = null; }
             silenceTimer = setTimeout(checkSilence, 100);
         }
         setTimeout(checkSilence, 400);
     }
 
     function playAudio(blob) {
-        if (!ttsEnabled) {
-            if (autoMode) {
-                setTimeout(() => { if (autoMode && !isRecording) startRecording(); }, 100);
-            }
-            return;
-        }
-        
-        if (currentAudio) {
-            currentAudio.pause();
-            currentAudio = null;
-        }
-        
-        const audioUrl = URL.createObjectURL(blob);
-        currentAudio = new Audio(audioUrl);
+        if (!ttsEnabled) { if (autoMode) setTimeout(() => { if (autoMode && !isRecording) startRecording(); }, 100); return; }
+        if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+        const url = URL.createObjectURL(blob);
+        currentAudio = new Audio(url);
         currentAudio.play();
-        
-        currentAudio.onended = () => {
-            URL.revokeObjectURL(audioUrl);
-            currentAudio = null;
-            if (autoMode) {
-                setTimeout(() => { if (autoMode && !isRecording) startRecording(); }, 100);
-            }
-        };
+        currentAudio.onended = () => { URL.revokeObjectURL(url); currentAudio = null; if (autoMode) setTimeout(() => { if (autoMode && !isRecording) startRecording(); }, 100); };
     }
 
     function sendText() {
         const input = document.getElementById("text-input");
-        const message = input.value.trim();
-        if (!message) return;
-        
+        const msg = input.value.trim();
+        if (!msg) return;
         interruptCurrentResponse();
-        addMessage(message, "user");
-        
-        if (chatWs && chatWs.readyState === WebSocket.OPEN) {
-            chatWs.send(message);
-            showTyping();
-        } else {
-            addMessage("⚠️ Connection lost! Refresh the page.", "system");
-        }
+        addMessage(msg, "user");
+        if (chatWs && chatWs.readyState === WebSocket.OPEN) { chatWs.send(msg); showTyping(); }
+        else { addMessage("⚠️ Connection lost! Refresh.", "system"); }
         input.value = "";
     }
-
-    document.getElementById("text-input").addEventListener("keypress", (e) => {
-        if (e.key === "Enter") sendText();
-    });
+    document.getElementById("text-input").addEventListener("keypress", (e) => { if (e.key === "Enter") sendText(); });
 
     function addMessage(text, type) {
-        const div = document.createElement("div");
-        div.className = `message ${type}`;
-        div.textContent = text;
-        chatBox.appendChild(div);
-        chatBox.scrollTop = chatBox.scrollHeight;
+        const div = document.createElement("div"); div.className = `message ${type}`; div.textContent = text;
+        chatBox.appendChild(div); chatBox.scrollTop = chatBox.scrollHeight;
     }
-
     function addMessageStreaming(text, type) {
-        const div = document.createElement("div");
-        div.className = `message ${type}`;
-        chatBox.appendChild(div);
-        
+        const div = document.createElement("div"); div.className = `message ${type}`; chatBox.appendChild(div);
         let i = 0;
-        const speed = 15;
-        function typeChar() {
-            if (i < text.length) {
-                div.textContent += text.charAt(i);
-                i++;
-                chatBox.scrollTop = chatBox.scrollHeight;
-                setTimeout(typeChar, speed);
-            }
-        }
-        typeChar();
+        function t() { if (i < text.length) { div.textContent += text.charAt(i); i++; chatBox.scrollTop = chatBox.scrollHeight; setTimeout(t, 15); } }
+        t();
     }
-
     function showTyping() {
         removeTyping();
-        const indicator = document.createElement("div");
-        indicator.className = "typing-indicator";
-        indicator.id = "typing-dots";
-        indicator.innerHTML = "<span></span><span></span><span></span>";
-        chatBox.appendChild(indicator);
-        chatBox.scrollTop = chatBox.scrollHeight;
+        const el = document.createElement("div"); el.className = "typing-indicator"; el.id = "typing-dots";
+        el.innerHTML = "<span></span><span></span><span></span>";
+        chatBox.appendChild(el); chatBox.scrollTop = chatBox.scrollHeight;
     }
+    function removeTyping() { const el = document.getElementById("typing-dots"); if (el) el.remove(); }
 
-    function removeTyping() {
-        const existing = document.getElementById("typing-dots");
-        if (existing) existing.remove();
-    }
-
+    // Knowledge Base
     async function uploadPDF() {
-        const input = document.getElementById("pdf-input");
-        const file = input.files[0];
-        if (!file) return;
-
-        const formData = new FormData();
-        formData.append("file", file);
-
-        const uploadBtn = document.getElementById("upload-btn");
-        const progress = document.getElementById("kb-progress");
-        const progressBar = document.getElementById("kb-progress-bar");
-        const progressText = document.getElementById("kb-progress-text");
-
-        uploadBtn.disabled = true;
-        uploadBtn.textContent = "⏳ Uploading...";
-        uploadBtn.style.borderColor = "#fbbf24";
-        uploadBtn.style.color = "#fbbf24";
-        progress.style.display = "block";
-        progressBar.style.width = "20%";
-        progressText.textContent = `📤 Uploading ${file.name}...`;
-
-        setTimeout(() => { progressBar.style.width = "50%"; progressText.textContent = "📄 Processing PDF..."; }, 500);
-        setTimeout(() => { progressBar.style.width = "75%"; progressText.textContent = "🔍 Building search index..."; }, 1500);
-
+        const input = document.getElementById("pdf-input"); const file = input.files[0]; if (!file) return;
+        const formData = new FormData(); formData.append("file", file);
+        const uploadBtn = document.getElementById("upload-btn"), progress = document.getElementById("kb-progress");
+        const bar = document.getElementById("kb-progress-bar"), text = document.getElementById("kb-progress-text");
+        uploadBtn.disabled = true; uploadBtn.textContent = "⏳ Uploading...";
+        progress.style.display = "block"; bar.style.width = "20%"; text.textContent = `📤 Uploading ${file.name}...`;
+        setTimeout(() => { bar.style.width = "50%"; text.textContent = "📄 Processing PDF..."; }, 500);
+        setTimeout(() => { bar.style.width = "75%"; text.textContent = "🔍 Building index..."; }, 1500);
         try {
             const res = await fetch("/api/knowledge/upload", { method: "POST", body: formData });
             const data = await res.json();
-
-            if (res.ok) {
-                progressBar.style.width = "100%";
-                progressBar.style.background = "linear-gradient(90deg, #4ade80, #22c55e)";
-                progressText.textContent = `✅ ${data.message} (${data.total_chunks} chunks)`;
-                addMessage(`✅ ${data.message} (${data.total_chunks} chunks)`, "system");
-            } else {
-                progressBar.style.background = "#ef4444";
-                progressText.textContent = `❌ ${data.error}`;
-                addMessage(`❌ ${data.error}`, "system");
-            }
-        } catch (e) {
-            progressBar.style.background = "#ef4444";
-            progressText.textContent = `❌ Upload failed`;
-            addMessage(`❌ Upload failed: ${e.message}`, "system");
-        }
-
-        uploadBtn.disabled = false;
-        uploadBtn.textContent = "📄 Upload PDF";
-        uploadBtn.style.borderColor = "#3b82f6";
-        uploadBtn.style.color = "#3b82f6";
-        
-        setTimeout(() => {
-            progress.style.display = "none";
-            progressBar.style.width = "0%";
-            progressBar.style.background = "linear-gradient(90deg, #3b82f6, #8b5cf6)";
-        }, 3000);
-
-        input.value = "";
-        loadKBStatus();
+            if (res.ok) { bar.style.width = "100%"; bar.style.background = "linear-gradient(90deg, #4ade80, #22c55e)"; text.textContent = `✅ ${data.message} (${data.total_chunks} chunks)`; addMessage(`✅ ${data.message}`, "system"); }
+            else { bar.style.background = "#ef4444"; text.textContent = `❌ ${data.error}`; }
+        } catch (e) { bar.style.background = "#ef4444"; text.textContent = "❌ Upload failed"; }
+        uploadBtn.disabled = false; uploadBtn.textContent = "📄 Upload PDF";
+        setTimeout(() => { progress.style.display = "none"; bar.style.width = "0%"; bar.style.background = "linear-gradient(90deg, #3b82f6, #8b5cf6)"; }, 3000);
+        input.value = ""; loadKBStatus();
     }
-
     async function loadKBStatus() {
         try {
-            const res = await fetch("/api/knowledge/status");
-            const data = await res.json();
-
-            const statusEl = document.getElementById("kb-status");
-            const filesEl = document.getElementById("kb-files");
-
-            if (data.files.length > 0) {
-                statusEl.textContent = `${data.files.length} file(s) | ${data.total_chunks} chunks`;
-                statusEl.style.color = "#4ade80";
-
-                filesEl.innerHTML = data.files.map(f => `
-                    <div style="display:flex; align-items:center; justify-content:space-between; padding:6px 10px; margin-top:4px; background:#1a1a2e; border-radius:8px; font-size:12px;">
-                        <span style="color:#aaa;">📄 ${f}</span>
-                        <button onclick="deleteKBFile('${f}')" style="background:transparent; border:none; color:#f87171; cursor:pointer; font-size:11px;">🗑️</button>
-                    </div>
-                `).join("");
-            } else {
-                statusEl.textContent = "No documents";
-                statusEl.style.color = "#666";
-                filesEl.innerHTML = "";
-            }
+            const res = await fetch("/api/knowledge/status"); const data = await res.json();
+            const s = document.getElementById("kb-status"), f = document.getElementById("kb-files");
+            if (data.files.length > 0) { s.textContent = `${data.files.length} file(s) · ${data.total_chunks} chunks`; s.style.color = "#4ade80";
+                f.innerHTML = data.files.map(n => `<div class="kb-file"><span class="kb-file-name">📄 ${n}</span><button class="kb-file-delete" onclick="deleteKBFile('${n}')">🗑️</button></div>`).join("");
+            } else { s.textContent = "No documents"; s.style.color = "#374151"; f.innerHTML = ""; }
         } catch (e) {}
     }
-
     async function deleteKBFile(filename) {
-        try {
-            const res = await fetch(`/api/knowledge/${filename}`, { method: "DELETE" });
-            const data = await res.json();
-            addMessage(`🗑️ ${data.message}`, "system");
-        } catch (e) {
-            addMessage(`❌ Delete failed`, "system");
-        }
+        try { const r = await fetch(`/api/knowledge/${filename}`, { method: "DELETE" }); const d = await r.json(); addMessage(`🗑️ ${d.message}`, "system"); }
+        catch (e) { addMessage("❌ Delete failed", "system"); }
         loadKBStatus();
     }
-
-    fetch("/api/knowledge/clear", { method: "DELETE" })
-        .then(() => loadKBStatus())
-        .catch(() => loadKBStatus());
+    fetch("/api/knowledge/clear", { method: "DELETE" }).then(() => loadKBStatus()).catch(() => loadKBStatus());
     </script>
 </body>
 </html>

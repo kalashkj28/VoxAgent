@@ -76,20 +76,6 @@ async def knowledge_status():
         "files": files
     }
 
-@app.delete("/api/knowledge/{filename}")
-async def delete_knowledge(filename: str):
-    """Delete a PDF and reload KB."""
-    kb_dir = os.path.join(os.path.dirname(__file__), "..", "knowledge_base")
-    file_path = os.path.join(kb_dir, filename)
-    
-    if os.path.exists(file_path):
-        os.remove(file_path)
-        kb.load_documents()
-        print(f"🗑️ Deleted: {filename} | KB chunks: {len(kb.chunks)}")
-        return {"message": f"'{filename}' deleted!", "total_chunks": len(kb.chunks)}
-    
-    return JSONResponse({"error": "File not found!"}, status_code=404)
-
 @app.delete("/api/knowledge/clear")
 async def clear_knowledge():
     """Delete all PDFs to clear KB."""
@@ -104,6 +90,20 @@ async def clear_knowledge():
     kb.is_ready = False
     print("🧹 KB cleared — fresh session!")
     return {"message": "Knowledge base cleared!", "total_chunks": 0}
+
+@app.delete("/api/knowledge/{filename}")
+async def delete_knowledge(filename: str):
+    """Delete a PDF and reload KB."""
+    kb_dir = os.path.join(os.path.dirname(__file__), "..", "knowledge_base")
+    file_path = os.path.join(kb_dir, filename)
+    
+    if os.path.exists(file_path):
+        os.remove(file_path)
+        kb.load_documents()
+        print(f"🗑️ Deleted: {filename} | KB chunks: {len(kb.chunks)}")
+        return {"message": f"'{filename}' deleted!", "total_chunks": len(kb.chunks)}
+    
+    return JSONResponse({"error": "File not found!"}, status_code=404)
 
 @app.websocket("/ws/voice")
 async def voice_pipeline(websocket: WebSocket):

@@ -49,7 +49,7 @@ async def search_web(query: str) -> dict:
             results = DDGS().text(query, max_results=3)
             return results
         
-        results = await asyncio.to_thread(_search)
+        results = await asyncio.wait_for(asyncio.to_thread(_search), timeout=20.0)
         
         if not results:
             return {"query": query, "result": "No results found.", "source": "DuckDuckGo"}
@@ -63,6 +63,8 @@ async def search_web(query: str) -> dict:
             "result": summary[:800],
             "source": "DuckDuckGo"
         }
+    except asyncio.TimeoutError:
+        return {"error": f"Search timed out after 20 seconds for: {query}"}
     except Exception as e:
         return {"error": f"Search failed: {str(e)}"}
 
