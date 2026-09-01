@@ -10,19 +10,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Install uv for fast dependency management
 RUN pip install uv
 
-# Copy dependency files first (Docker cache layer)
-COPY pyproject.toml uv.lock ./
+# Copy dependency files
+COPY pyproject.toml ./
 
 # Install dependencies
-RUN uv sync --no-dev
+RUN uv pip install --system -e .
 
 # Copy source code
 COPY app/ app/
 COPY frontend/ frontend/
-COPY knowledge_base/ knowledge_base/
 
-# Create data directory for SQLite
-RUN mkdir -p data
+# Create directories
+RUN mkdir -p data knowledge_base
 
 # Expose port
 EXPOSE 8000
@@ -32,4 +31,4 @@ HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
     CMD python -c "import httpx; httpx.get('http://localhost:8000/')" || exit 1
 
 # Run server
-CMD ["uv", "run", "uvicorn", "app.server:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "app.server:app", "--host", "0.0.0.0", "--port", "8000"]
