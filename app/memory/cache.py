@@ -53,8 +53,14 @@ class SemanticCache:
     def _get_embedder(self):
         if self.embedder is None:
             try:
-                from sentence_transformers import SentenceTransformer
-                self.embedder = SentenceTransformer("all-MiniLM-L6-v2")
+                # Try to reuse KB's embedder to save memory
+                from app.rag.knowledge_base import kb
+                if kb.embedder is not None:
+                    self.embedder = kb.embedder
+                    print("⚡ Cache reusing KB embedder (saved ~80MB RAM)")
+                else:
+                    from sentence_transformers import SentenceTransformer
+                    self.embedder = SentenceTransformer("all-MiniLM-L6-v2")
             except Exception as e:
                 print(f"⚠️ Cache embedder load failed: {e}")
         return self.embedder
