@@ -227,20 +227,15 @@
 
         /* Mobile */
         @media (max-width: 768px) {
-            .app { padding: 12px; }
-            .main { grid-template-columns: 1fr; }
+            body { overflow: auto; height: auto; }
+            .app { padding: 10px; height: auto; min-height: 100vh; }
+            .main { grid-template-columns: 1fr; overflow: visible; height: auto; }
             .header { flex-direction: column; gap: 8px; text-align: center; }
             .header-right { justify-content: center; }
-            .chat-panel { min-height: 50vh; }
-            .sidebar { flex-direction: row; flex-wrap: wrap; }
-            .sidebar .panel { flex: 1; min-width: calc(50% - 7px); }
-            .sidebar .panel:first-child { min-width: 100%; }
+            .chat-panel { height: 55vh; min-height: 55vh; }
+            .sidebar { flex-direction: column; gap: 10px; overflow: visible; }
+            .sidebar .panel { width: 100%; }
             #mic-btn { width: 60px; height: 60px; font-size: 24px; }
-        }
-
-        @media (max-width: 480px) {
-            .sidebar { flex-direction: column; }
-            .sidebar .panel { min-width: 100%; }
             .metrics-grid { grid-template-columns: repeat(4, 1fr); }
             .metric { padding: 8px 4px; }
             .metric-value { font-size: 14px; }
