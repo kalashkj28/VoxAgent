@@ -346,8 +346,10 @@
         addMessage(`${ttsEnabled ? "🔊" : "🔇"} Voice ${ttsEnabled ? "ON" : "OFF"}`, "system");
     }
 
-    const voiceWs = new WebSocket("ws://localhost:8000/ws/voice");
-    const chatWs = new WebSocket("ws://localhost:8000/ws/chat");
+    const wsProtocol = location.protocol === "https:" ? "wss:" : "ws:";
+    const wsBase = `${wsProtocol}//${location.host}`;
+    const voiceWs = new WebSocket(`${wsBase}/ws/voice`);
+    const chatWs = new WebSocket(`${wsBase}/ws/chat`);
     const statusDiv = document.getElementById("status");
     const chatBox = document.getElementById("chat-box");
 
