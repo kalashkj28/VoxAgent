@@ -12,12 +12,10 @@ VOICES = {
     "english_male": "en-IN-PrabhatNeural",
 }
 
-DEFAULT_VOICE = VOICES["hindi_female"]
-
 class TextToSpeech:
     """TTS with Edge-TTS primary and gTTS fallback."""
     
-    def __init__(self, voice: str = DEFAULT_VOICE):
+    def __init__(self, voice: str = "hi-IN-SwaraNeural"):
         self.voice = voice
         print(f"✅ TTS initialized with voice: {voice}")
     
@@ -25,7 +23,7 @@ class TextToSpeech:
         """Convert text to audio."""
         start = time.time()
         
-        # Try Edge-TTS first (fast when available)
+        # Try Edge-TTS first
         try:
             audio_bytes = await self._edge_tts(text)
             duration_ms = (time.time() - start) * 1000
@@ -34,7 +32,7 @@ class TextToSpeech:
         except Exception as e:
             print(f"⚠️ Edge-TTS failed: {e}, using gTTS")
         
-        # Fallback to gTTS (always works)
+        # Fallback to gTTS
         try:
             audio_bytes = await self._google_tts(text)
             duration_ms = (time.time() - start) * 1000

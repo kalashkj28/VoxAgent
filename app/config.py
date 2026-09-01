@@ -8,7 +8,7 @@ load_dotenv()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 
-TTS_VOICE = "hi-IN-SwaraNeural"
+TTS_VOICE = "en-IN-NeerjaNeural"
 PERSISTENT_MEMORY = False
 HOST = "0.0.0.0"
 PORT = 8000
