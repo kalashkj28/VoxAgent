@@ -1,0 +1,29 @@
+# Dependencies
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Environment
+.env
+
+# Database (local development)
+data/voxagent.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# UV
+uv.lock
+
+# Misc
+*.log
+.gemini/

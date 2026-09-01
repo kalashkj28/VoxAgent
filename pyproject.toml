@@ -1,0 +1,30 @@
+[project]
+name = "voxagent"
+version = "0.1.0"
+description = "Real-time Voice AI Agent with LangGraph, RAG, and Semantic Caching"
+readme = "README.md"
+authors = [
+    { name = "Kalash Jain", email = "kalashjainkj28@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "ddgs>=9.16.0",
+    "edge-tts==6.1.12",
+    "faiss-cpu>=1.15.0",
+    "fastapi==0.115.0",
+    "google-generativeai==0.8.0",
+    "gtts>=2.5.4",
+    "httpx>=0.28.1",
+    "langchain-core>=1.6.1",
+    "langgraph>=1.2.2",
+    "pypdf>=6.16.2",
+    "python-dotenv==1.0.1",
+    "python-multipart==0.0.9",
+    "sentence-transformers>=6.0.0",
+    "uvicorn==0.30.0",
+    "websockets==12.0",
+]
+
+[build-system]
+requires = ["uv_build>=0.12.5,<0.13.0"]
+build-backend = "uv_build"

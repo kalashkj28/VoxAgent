@@ -1,0 +1,28 @@
+# Environment
+.env
+.venv/
+venv/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Data
+data/
+knowledge_base/*.pdf
+
+# Audio
+*.wav
+*.mp3
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+*.log
