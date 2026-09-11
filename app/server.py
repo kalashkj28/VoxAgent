@@ -140,14 +140,14 @@ async def voice_pipeline(websocket: WebSocket):
             total_start = time.time()
             print(f"\n📩 Received audio: {len(audio_bytes)} bytes")
             
-            if len(audio_bytes) < 1000:
-                await websocket.send_text(json.dumps({
-                    "type": "error",
-                    "message": "Audio too short! Speak longer (2-3 seconds)."
-                }))
-                continue
-            
             try:
+                if len(audio_bytes) < 1000:
+                    await websocket.send_text(json.dumps({
+                        "type": "error",
+                        "message": "Audio too short! Speak longer (2-3 seconds)."
+                    }))
+                    continue
+                
                 stt_result = await stt.transcribe(audio_bytes)
                 user_text = stt_result["text"]
                 
@@ -195,7 +195,7 @@ async def voice_pipeline(websocket: WebSocket):
                 print(f"✅ Total pipeline: {total_ms:.0f}ms")
             
             except (WebSocketDisconnect, RuntimeError) as e:
-                print(f"⚠️ Client disconnected during pipeline: {e}")
+                print(f"⚠️ Client disconnected: {e}")
                 return
             except Exception as e:
                 print(f"❌ Pipeline error: {e}")
