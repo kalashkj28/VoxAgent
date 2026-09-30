@@ -77,7 +77,7 @@ def classify_intent(state: AgentState) -> dict:
     
     from app.rag.knowledge_base import kb
     
-    tools_list = """1. get_current_time() - current time, date, day
+    tools_list = """1. get_current_time(timezone) - current time, date, day. Default timezone is "Asia/Kolkata". For other cities use IANA timezone like "America/New_York", "Europe/London", "Asia/Tokyo", "America/Los_Angeles" etc.
 2. get_weather(city) - weather for a city
 3. search_web(query) - web search for ANY factual info, news, products, current events, prices"""
     

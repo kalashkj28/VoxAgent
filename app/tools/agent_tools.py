@@ -1,12 +1,17 @@
 """Agentic tools for VoxAgent."""
 
 import datetime
+from zoneinfo import ZoneInfo
 import httpx
 import asyncio
 
 def get_current_time(timezone: str = "Asia/Kolkata") -> dict:
     """Get current time, date, and day."""
-    now = datetime.datetime.now()
+    try:
+        tz = ZoneInfo(timezone)
+    except Exception:
+        tz = ZoneInfo("Asia/Kolkata")
+    now = datetime.datetime.now(tz)
     return {
         "time": now.strftime("%I:%M %p"),
         "date": now.strftime("%d %B %Y"),
